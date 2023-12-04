@@ -38,7 +38,8 @@ class LinearPredictorProvider(PredictorProvider):
         return self.point_prop(state, dt), self.linear_prop_mat(state, dt) @ covariance @ self.linear_prop_mat(state, dt).T + self.process_noise
 
 class UnscentedPredictorProvider(PredictorProvider):
-    def __init__(self, num_states, alpha=1e-3, beta=2, kappa=1):
+    def __init__(self, process_noise, noise_lerp, num_states, alpha=1e-3, beta=2, kappa=1):
+        super().__init__(process_noise, noise_lerp)
         self.num_states = num_states
 
         self.sigma_generator = SigmaGenerator.SigmaGenerator(num_states, alpha, beta, kappa)
@@ -53,9 +54,12 @@ class UnscentedPredictorProvider(PredictorProvider):
 
         x_prime = self.point_prop(sigma_points, dt)
 
-        mean = mean_weights.T @ x_prime
+        mean = mean_weights @ x_prime.T
 
-        dev = x_prime - mean
-        covariance = cov_weights.T @ dev @ dev.T + self.process_noise
+        dev = x_prime - mean[:, np.newaxis]
+
+        # could also be calculated with appropriately configured weighted covariance calc
+        covariance = np.einsum('w,iw,jw->ij', cov_weights, dev, dev) + self.process_noise
+
 
         return mean, covariance

@@ -61,12 +61,15 @@ class UnscentedCorrectorProvider(CorrectorProvider):
 
         pred_measurements = self.obs_pred(sigma_points)
 
-        mean_measure = mean_weights.T @ pred_measurements
-        dev = pred_measurements - mean_measure
-        raw_cov_measure = cov_weights.T @ dev @ dev.T
+        mean_measure = mean_weights @ pred_measurements.T
+        dev = pred_measurements - mean_measure[:, np.newaxis]
+
+        raw_cov_measure = np.einsum('w,iw,jw->ij', cov_weights, dev, dev)
         cov_measure = raw_cov_measure + self.measurement_noise
 
-        cross_cov = cov_weights.T @ (sigma_points - state) @ dev.T
+        sigma_dev = sigma_points - state[:, np.newaxis]
+
+        cross_cov = np.einsum('w,iw,jw->ij', cov_weights, sigma_dev, dev)
 
         kalman_gain = cross_cov @ np.linalg.inv(cov_measure)
 
@@ -75,7 +78,7 @@ class UnscentedCorrectorProvider(CorrectorProvider):
 
         # AUKF: Exponential moving average of measurement noise estimate
         innovation = measurement - mean_measure
-        residual = measurement - self.obs_pred(posterior_x) # This could be replaced with a sigma point weighted calc
+        residual = measurement - self.obs_pred(posterior_x[:, np.newaxis]) # This could be replaced with a sigma point weighted calc
 
         self.update_measurement_noise(residual, raw_cov_measure)
         predictor_provider.update_process_noise(innovation, kalman_gain)
