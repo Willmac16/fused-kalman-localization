@@ -25,16 +25,17 @@ class State():
         vel = self.u[3:6]
         acc = self.u[6:9]
         q = quaternion.from_float_array(self.u[9:13])
+        q /= q * q
         w = self.u[13:16]
         
         
 
-        # decide if rocket is still on rail
-        if np.linalg.norm(pos) < 3:
-            #position changes in one degree of freedom
-            pos += np.dot(np.array([0,0,1]), vel) * dt
-        else:
-            pos += vel * dt
+        # # decide if rocket is still on rail
+        # if np.linalg.norm(pos) < 3:
+        #     #position changes in one degree of freedom
+        #     pos += np.dot(np.array([0,0,1]), vel) * dt
+        # else:
+        pos += vel * dt
         pos += acc * dt**2 / 2
 
         vel += acc * dt
@@ -63,6 +64,7 @@ class State():
         world_to_rocket = np.linalg.inv(R)
 
         q_prime = quaternion.from_rotation_matrix(world_to_rocket)
+        q_prime /= q_prime * q_prime
 
         delta_q = q_prime / q
 
@@ -80,7 +82,8 @@ if __name__ == "__main__":
     # quaternion initial conditions at 2 degrees
     initial_angle = 5 * np.pi / 180
     
-    initial_q = np.array([np.cos(initial_angle / 2), 0, np.sin(initial_angle / 2), np.sin(initial_angle / 2)])
+    # initial_q = np.array([np.cos(initial_angle / 2), 0, np.sin(initial_angle / 2), np.sin(initial_angle / 2)])
+    initial_q = np.array((1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0))
     
     u = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0,*initial_q,0,0,0])
     
