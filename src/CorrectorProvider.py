@@ -24,7 +24,7 @@ class CorrectorProvider(ABC):
 
 class LinearCorrectorProvider(CorrectorProvider):
     @abstractmethod
-    def linear_obs_mat(self):
+    def linear_obs_mat(self, state):
         pass
 
     def obs_pred(self, state):
@@ -82,5 +82,7 @@ class UnscentedCorrectorProvider(CorrectorProvider):
 
         self.update_measurement_noise(residual, raw_cov_measure)
         predictor_provider.update_process_noise(innovation, kalman_gain)
+
+        posterior_cov = (posterior_cov + posterior_cov.T) / 2
 
         return posterior_x, posterior_cov
