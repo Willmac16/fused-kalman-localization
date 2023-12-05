@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle as pkl
 
+import quaternion
+
 from utils import *
 
 class State():
@@ -11,7 +13,6 @@ class State():
         self.m_rb = 18.88 # [kg]
         self.m_tot = self.m_rb + mass(self.t)
         self.roll = 0
-        self.com = np.array([0,0,0])
     
     def _update_time_dependent_variables(self, dt):
         self.t = self.t + dt
@@ -19,47 +20,57 @@ class State():
     
     def update_state(self, dt, forces=np.zeros(3),roll_torque=0):
         self._update_time_dependent_variables(dt)
-        x, y, z, vx, vy, vz, ax, ay, az, e0, e1, e2, e3, w1, w2, w3 = self.u
-        pos = np.array([x, y, z])
-        vel = np.array([vx, vy, vz])
-        acc = np.array([ax, ay, az])
+
+        pos = self.u[:3]
+        vel = self.u[3:6]
+        acc = self.u[6:9]
+        q = quaternion.from_float_array(self.u[9:13])
+        w = self.u[13:16]
         
         
+
         # decide if rocket is still on rail
         if np.linalg.norm(pos) < 3:
             #position changes in one degree of freedom
-            pos += np.array([0,0,1]) * vz * dt
-        
+            pos += np.dot(np.array([0,0,1]), vel) * dt
         else:
             pos += vel * dt
+        pos += acc * dt**2 / 2
+
+        vel += acc * dt
+
+        acc = forces / self.m_tot * dt
+
         # update roll
         self.roll += roll_torque * dt
+
+        up_vec = np.array([0,0,1])
         
-        
-        q = np.array([e0, e1, e2, e3])
-        # update quaternion to match linear velocity
-        ang = 2*np.arccos(e0) + w3 * dt
-        sin_ang = np.sin(ang/2)**2
-        q_prime = np.array([np.cos(ang/2)**2,vx*sin_ang * dt, vy*sin_ang * dt, vz*sin_ang * dt])
-        qdot = q_prime - q
-        #normalize qdot
-        #qdot = qdot / np.linalg.norm(qdot)
-        # update angular velocity based on qdot
-        omega_matrix = 2 * np.array([
-                        [-e1, e0, e3, -e2],
-                        [-e2, -e3, e0, e1],
-                        [-e3, e2, -e1, e0]
-                    ])
-        w1 = 0 if x == 0 else vx / x
-        w2 = 0 if x == 0 else vy / y
-        w3 = self.roll if x == 0 else vz / z + self.roll
-        w = np.array([w1, w2, w3])
-        q = q_prime / np.linalg.norm(q_prime)        
-        vel += acc * dt + np.cross(w, self.com) * dt
-        acc = forces / self.m_tot * dt + np.cross(w,np.cross(w,self.com)) * dt
-        
+        if np.linalg.norm(vel) > 1e-5:
+          up_vec = vel / np.linalg.norm(vel)
+
+        # Yes this is a constant, this is wrong
+        fwrd_vec = np.array([0,1,0])
+        left_vec = np.cross(up_vec, fwrd_vec)
+        left_vec = left_vec / np.linalg.norm(left_vec)
+
+        fwrd_vec = np.cross(left_vec, up_vec)
+
+        # Create the rotation matrix from rocket to world frame
+        R = np.vstack((up_vec, fwrd_vec, left_vec))
+
+        # Create the rotation matrix from world to rocket frame
+        world_to_rocket = np.linalg.inv(R)
+
+        q_prime = quaternion.from_rotation_matrix(world_to_rocket)
+
+        delta_q = q_prime / q
+
+        # compute the angular velocity in the world frame
+        w = quaternion.as_vector_part(delta_q / dt)
+
         # update u
-        self.u = np.array([*pos, *vel, *acc, *q, *w])
+        self.u = np.hstack([pos, vel, acc, quaternion.as_float_array(q_prime), w])
 
         
         
