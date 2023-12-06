@@ -28,10 +28,10 @@ class LinearCorrectorProvider(CorrectorProvider):
         pass
 
     def obs_pred(self, state):
-        return self.linear_obs_mat() @ state
+        return self.linear_obs_mat(state) @ state
 
     def correct(self, state, covariance, measurement, predictor_provider: PredictorProvider):
-        obs_mat = self.linear_obs_mat()
+        obs_mat = self.linear_obs_mat(state)
         pred_measure_cov = obs_mat @ covariance @ obs_mat.T
 
         kalman_gain = covariance @ obs_mat.T @ np.linalg.inv(obs_mat @ covariance @ obs_mat.T + self.measurement_noise)
