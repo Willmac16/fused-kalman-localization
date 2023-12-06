@@ -13,11 +13,11 @@ class State():
         self.m_rb = 18.88 # [kg]
         self.m_tot = self.m_rb + mass(self.t)
         self.roll = 0
-    
+
     def _update_time_dependent_variables(self, dt):
         self.t = self.t + dt
         self.m_tot = self.m_rb + mass(self.t)
-    
+
     def update_state(self, dt, forces=np.zeros(3),roll_torque=0):
         self._update_time_dependent_variables(dt)
 
@@ -30,15 +30,21 @@ class State():
         
         
 
-        # # decide if rocket is still on rail
-        # if np.linalg.norm(pos) < 3:
-        #     #position changes in one degree of freedom
-        #     pos += np.dot(np.array([0,0,1]), vel) * dt
-        # else:
-        pos += vel * dt
-        pos += acc * dt**2 / 2
+        # decide if rocket is still on rail
+        # don't let the rocket fall
+        if np.linalg.norm(pos) < 3:
+            #position changes in one degree of freedom
+            if (vel[2] > 0):
+                pos += np.array((0, 0, 1)) * vel[2] * dt
+            if (acc[2] > 0):
+                pos += np.array((0, 0, 1)) * acc[2] * dt**2 / 2
 
-        vel += acc * dt
+                vel += np.array((0, 0, 1)) * acc[2] * dt
+        else:
+            pos += vel * dt
+            pos += acc * dt**2 / 2
+
+            vel += acc * dt
 
         acc = forces / self.m_tot * dt
 
