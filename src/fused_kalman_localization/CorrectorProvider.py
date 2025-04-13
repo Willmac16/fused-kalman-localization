@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 import numpy as np
 
-import src.SigmaGenerator as SigmaGenerator
-import src.PredictorProvider as PredictorProvider
+import fused_kalman_localization.SigmaGenerator as SigmaGenerator
+import fused_kalman_localization.PredictorProvider as PredictorProvider
 
 # Each corrector provider handles a single, atomic sensor update
 class CorrectorProvider(ABC):

@@ -1,0 +1,28 @@
+[project]
+name = "fused_kalman_localization"
+version = "0.0.1"
+authors = [
+  { name="Will MacCormack", email="me@willmac.xyz" },
+  { name="Ben Rubinstein", email="ben.z.rubinstein@gmail.com" },
+]
+description = "Modular Linear, Extended, and Unscented Kalman Filter Library"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+dependencies = [
+  "numpy",
+]
+
+[project.urls]
+Homepage = "https://github.com/Willmac16/fused-kalman-localization"
+Issues = "https://github.com/Willmac16/fused-kalman-localization/issues"
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

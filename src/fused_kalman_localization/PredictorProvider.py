@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 
-import src.SigmaGenerator as SigmaGenerator
+import fused_kalman_localization.SigmaGenerator as SigmaGenerator
 
 class PredictorProvider(ABC):
     def __init__(self, process_noise, noise_lerp):
